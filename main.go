@@ -9,12 +9,14 @@ import (
 	"github.com/seandheath/gogogadget/internal/download"
 	"github.com/seandheath/gogogadget/internal/gadget"
 	"github.com/seandheath/gogogadget/internal/pivot"
+	"github.com/seandheath/gogogadget/internal/server"
 )
 
 // Add your gadget here
 var gadgets = [...]*gadget.Gadget{
 	&download.Gadget,
 	&pivot.Gadget,
+	&server.Gadget,
 }
 
 func main() {
