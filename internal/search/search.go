@@ -10,8 +10,7 @@ import (
 	"regexp"
 	"bufio"
 	"os"
-	"io/ioutil"
-	"bytes"
+	"strings"
 
 	"github.com/seandheath/gogogadget/internal/gadget"
 )
@@ -75,19 +74,19 @@ func Run() {
 
 	// Iterate through all files (handle recursiveness)
 	go func() {
+		defer close(files)
 		filepath.WalkDir(directory, func(filepath string, di fs.DirEntry, err error) error {
 			if err == nil {
         			files <- filepath
     			}
 			return nil
 		})
-		close(files)
 	}()
 
 	// Wait for threads to complete
 	go func() {
+		defer close(searches)
 		wg.Wait()
-		close(searches)
 	}()
 
 	// Print results
@@ -107,50 +106,59 @@ func worker(files <-chan string, searches chan<- string, pattern *regexp.Regexp)
 	}
 }
 
-func isBinary(file string) (bool, error) {
-	b, err := ioutil.ReadFile(file)
-	if err != nil {
-		return false, err
-	}
-	return bytes.Contains(b, []byte("\x00")), nil
+func isBinary(line string) bool {
+	return strings.Contains(line, "\x00")
 }
 
 
 func search(pattern *regexp.Regexp, filepath string) (string, error) {
-	if isB, err := isBinary(filepath); isB {
-		if err != nil {
-			return "", err
-		}
-
-		return "", fmt.Errorf("%w", "File is a binary file")
+	// Prevent read of empty or infinitely long files and symlinks
+	fi, err := os.Lstat(filepath)
+	if err != nil {
+		return "", err
 	}
-
+	size := fi.Size()
+	if size == 0 {
+		return "", fmt.Errorf("%w", "File is empty or abnormal")
+	}
+	if fi.Mode()&fs.ModeSymlink != 0 {
+		return "", fmt.Errorf("%w", "File is a symlink")
+	}
+	
+	// Open file
 	file, err := os.Open(filepath)
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
 
-
+	// Read file to find match
 	scanner := bufio.NewScanner(file)
-	matches := make(map[int]string)
+	var matches []string
 	var lineNum = 1
 	for scanner.Scan() {
 		line := scanner.Text()
+		if isBinary(line) {
+			return "", fmt.Errorf("%w", "Binary file")
+		}
 		if pattern.MatchString(line) {
-			matches[lineNum] = scanner.Text()
+			matches = append(matches, fmt.Sprintf("%s:%d:%s\n", filepath, lineNum, scanner.Text()))
 		} 
 		if err := scanner.Err(); err != nil {
 			return "", err
 		}
 		lineNum++
 	}
+
+	// Return matches
 	if len(matches) > 0 {
-		output := filepath + ":\n"
-		for ln, line := range matches {
-			output += fmt.Sprintf("%d:%s\n", ln, line)
+		output := ""
+		for _, match := range matches {
+			output += match
 		}
 		return output, nil
 	}
+
+	// No matches found
 	return "", fmt.Errorf("%w", "No match")
 }
