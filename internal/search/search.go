@@ -44,7 +44,6 @@ func initFlags(f *flag.FlagSet) {
 
 
 func Run() {
-	fmt.Printf("%b\n", ignoreCase)
 	if ignoreCase {
 		pattern = fmt.Sprintf("(?i)(%s)", pattern)
 	}
@@ -140,15 +139,8 @@ func search(pattern *regexp.Regexp, filepath string) (string, error) {
 		line := scanner.Text()
 		if pattern.MatchString(line) {
 			matches[lineNum] = scanner.Text()
-			/*
-			for i :=0; i < 5; i++{
-				scanner.Scan()
-				fmt.Println(scanner.Text())
-			}
-			*/
 		} 
 		if err := scanner.Err(); err != nil {
-			fmt.Println(fmt.Errorf("Error checking file: %w", err))
 			return "", err
 		}
 		lineNum++
