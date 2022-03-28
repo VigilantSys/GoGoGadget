@@ -2,7 +2,7 @@
 .DS_Store
 
 # Swp files
-.swp
+*.swp
 
 # Binaries for programs and plugins
 *.exe
