@@ -1,3 +1,5 @@
+// +build linux
+
 package main
 
 import (
@@ -10,8 +12,8 @@ import (
 	"github.com/seandheath/gogogadget/internal/gadget"
 	"github.com/seandheath/gogogadget/internal/pivot"
 	"github.com/seandheath/gogogadget/internal/server"
-	"github.com/seandheath/gogogadget/internal/escalate"
 	"github.com/seandheath/gogogadget/internal/search"
+	"github.com/seandheath/gogogadget/internal/escalate"
 )
 
 // Add your gadget here
@@ -19,8 +21,8 @@ var gadgets = [...]*gadget.Gadget{
 	&download.Gadget,
 	&pivot.Gadget,
 	&server.Gadget,
-	&escalate.Gadget,
 	&search.Gadget,
+	&escalate.Gadget,
 }
 
 func main() {
