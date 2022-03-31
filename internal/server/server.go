@@ -79,7 +79,9 @@ func uploadAction(w http.ResponseWriter, r *http.Request) {
 }
 
 func Run() {
-	fmt.Printf("Starting server for directory %s on port %s\n\n", dir, port)
+	fmt.Printf("Starting server for directory %s on port %s\n", dir, port)
+	fmt.Println("/ for directory listing")
+	fmt.Println("/upload for file upload")
 	http.HandleFunc("/upload", uploadAction)
 	fs := http.FileServer(http.Dir(dir))
 	http.Handle("/", fs)
