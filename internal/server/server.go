@@ -22,17 +22,39 @@ var Gadget gadget.Gadget = gadget.Gadget{
 var dir string
 var port string
 
-// Compile templates on start of the application
-var templates = template.Must(template.ParseFiles("./upload.html"))
-
 func initFlags(f *flag.FlagSet) {
 	f.StringVar(&dir, "dir", ".", "directory to serve, defaults to current directory")
 	f.StringVar(&port, "port", "8080", "port to serve on, defaults to 8080")
 }
 
+var templateString = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Upload File</title>
+  </head>
+  <body>
+    <form
+      enctype="multipart/form-data"
+      action="http://{{ .host }}/upload"
+      method="post"
+    >
+      <input type="file" name="myFile" />
+      <input type="submit" value="upload" />
+    </form>
+  </body>
+</html>`
+
 // Display the named template
-func display(w http.ResponseWriter, page string, data interface{}) {
-	templates.ExecuteTemplate(w, page+".html", data)
+func display(w http.ResponseWriter, r *http.Request, page string, data interface{}) {
+	var networking = map[string]string{"host": r.Host}
+	t, err := template.New("uploadTemplate").Parse(templateString)
+	if err != nil {
+		panic(err)
+	}
+	t.Execute(w, networking)
 }
 
 func uploadFile(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +94,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 func uploadAction(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 		case "GET":
-			display(w, "upload", nil)
+			display(w, r, "upload", nil)
 		case "POST":
 			uploadFile(w, r)
 	}
