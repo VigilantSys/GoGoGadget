@@ -1,4 +1,4 @@
-module github.com/seandheath/gogogadget
+module github.com/vigilantsys/gogogadget
 
 go 1.16
 

@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/seandheath/gogogadget/internal/gadget"
+	"github.com/vigilantsys/gogogadget/internal/gadget"
 )
 
 var Gadget gadget.Gadget = gadget.Gadget{

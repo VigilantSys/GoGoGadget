@@ -6,12 +6,12 @@ import (
 	"os"
 
 	"github.com/google/subcommands"
-	"github.com/seandheath/gogogadget/internal/download"
-	"github.com/seandheath/gogogadget/internal/gadget"
-	"github.com/seandheath/gogogadget/internal/pivot"
-	"github.com/seandheath/gogogadget/internal/server"
-	"github.com/seandheath/gogogadget/internal/escalate"
-	"github.com/seandheath/gogogadget/internal/search"
+	"github.com/vigilantsys/gogogadget/internal/download"
+	"github.com/vigilantsys/gogogadget/internal/escalate"
+	"github.com/vigilantsys/gogogadget/internal/gadget"
+	"github.com/vigilantsys/gogogadget/internal/pivot"
+	"github.com/vigilantsys/gogogadget/internal/search"
+	"github.com/vigilantsys/gogogadget/internal/server"
 )
 
 // Add your gadget here

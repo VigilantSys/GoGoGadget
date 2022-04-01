@@ -3,13 +3,13 @@ package server
 import (
 	"flag"
 	"fmt"
-	"os"
 	"io"
 	"net/http"
-	"text/template"
+	"os"
 	"path/filepath"
+	"text/template"
 
-	"github.com/seandheath/gogogadget/internal/gadget"
+	"github.com/vigilantsys/gogogadget/internal/gadget"
 )
 
 var Gadget gadget.Gadget = gadget.Gadget{
@@ -93,10 +93,10 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 
 func uploadAction(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-		case "GET":
-			display(w, r, "upload", nil)
-		case "POST":
-			uploadFile(w, r)
+	case "GET":
+		display(w, r, "upload", nil)
+	case "POST":
+		uploadFile(w, r)
 	}
 }
 

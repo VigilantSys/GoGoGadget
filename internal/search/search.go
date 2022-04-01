@@ -1,20 +1,18 @@
-package search 
-
+package search
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
-	"path/filepath"
 	"io/fs"
-	"sync"
-	"regexp"
-	"bufio"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
+	"sync"
 
-	"github.com/seandheath/gogogadget/internal/gadget"
+	"github.com/vigilantsys/gogogadget/internal/gadget"
 )
-
 
 var Gadget gadget.Gadget = gadget.Gadget{
 	GadgetName:     "search",
@@ -24,13 +22,12 @@ var Gadget gadget.Gadget = gadget.Gadget{
 	InitFlags:      initFlags,
 }
 
-
 var pattern string
 var directory string
+
 //var recursive bool
 var ignoreCase bool
 var numThreads int
-
 
 func initFlags(f *flag.FlagSet) {
 	f.StringVar(&pattern, "pattern", "", "regex pattern to search for")
@@ -40,7 +37,6 @@ func initFlags(f *flag.FlagSet) {
 	f.BoolVar(&ignoreCase, "ignoreCase", false, "true = case insensitive")
 	f.IntVar(&numThreads, "numThreads", 3, "The number of threads to create")
 }
-
 
 func Run() {
 	if ignoreCase {
@@ -77,8 +73,8 @@ func Run() {
 		defer close(files)
 		filepath.WalkDir(directory, func(filepath string, di fs.DirEntry, err error) error {
 			if err == nil {
-        			files <- filepath
-    			}
+				files <- filepath
+			}
 			return nil
 		})
 	}()
@@ -96,7 +92,6 @@ func Run() {
 	}
 }
 
-
 func worker(files <-chan string, searches chan<- string, pattern *regexp.Regexp) {
 	for filepath := range files {
 		result, err := search(pattern, filepath)
@@ -109,7 +104,6 @@ func worker(files <-chan string, searches chan<- string, pattern *regexp.Regexp)
 func isBinary(line string) bool {
 	return strings.Contains(line, "\x00")
 }
-
 
 func search(pattern *regexp.Regexp, filepath string) (string, error) {
 	// Prevent read of empty or infinitely long files and symlinks
@@ -124,7 +118,7 @@ func search(pattern *regexp.Regexp, filepath string) (string, error) {
 	if fi.Mode()&fs.ModeSymlink != 0 {
 		return "", fmt.Errorf("%w", "File is a symlink")
 	}
-	
+
 	// Open file
 	file, err := os.Open(filepath)
 	if err != nil {
@@ -143,7 +137,7 @@ func search(pattern *regexp.Regexp, filepath string) (string, error) {
 		}
 		if pattern.MatchString(line) {
 			matches = append(matches, fmt.Sprintf("%s:%d:%s\n", filepath, lineNum, scanner.Text()))
-		} 
+		}
 		if err := scanner.Err(); err != nil {
 			return "", err
 		}
