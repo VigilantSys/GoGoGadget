@@ -12,6 +12,7 @@ import (
 	"github.com/vigilantsys/gogogadget/internal/pivot"
 	"github.com/vigilantsys/gogogadget/internal/search"
 	"github.com/vigilantsys/gogogadget/internal/server"
+	"github.com/vigilantsys/gogogadget/internal/telnet"
 )
 
 // Add your gadget here
@@ -21,6 +22,7 @@ var gadgets = [...]*gadget.Gadget{
 	&server.Gadget,
 	&escalate.Gadget,
 	&search.Gadget,
+	&telnet.Gadget,
 }
 
 func main() {
@@ -35,5 +37,4 @@ func main() {
 	flag.Parse()
 	ctx := context.Background()
 	os.Exit(int(subcommands.Execute(ctx)))
-
 }
