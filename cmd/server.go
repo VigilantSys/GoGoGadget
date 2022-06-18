@@ -112,6 +112,11 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 
 	// Create file
 	dst, err := os.Create(filepath.Clean(fmt.Sprintf("%s/%s", serverDirectory, handler.Filename)))
+	if err != nil {
+		fmt.Println("Error creating file")
+		fmt.Println(err)
+		return
+	}
 	defer dst.Close()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
