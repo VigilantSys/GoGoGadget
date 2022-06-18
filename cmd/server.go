@@ -45,13 +45,13 @@ var serverCmd = &cobra.Command{
 	Short: "web server for sharing files",
 	Long:  `Server launches a web server for sharing files. Files can be uploaded or downloaded from the server.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Starting server for directory %s on port %s\n", serverDirectory, pivotPort)
+		fmt.Printf("Starting server for directory %s on port %s\n", serverDirectory, serverPort)
 		fmt.Println("/ for directory listing")
 		fmt.Println("/upload for file upload")
 		http.HandleFunc("/upload", uploadAction)
 		fs := http.FileServer(http.Dir(serverDirectory))
 		http.Handle("/", fs)
-		fmt.Println(http.ListenAndServe(":"+pivotPort, nil))
+		fmt.Println(http.ListenAndServe(":"+serverPort, nil))
 	},
 }
 
