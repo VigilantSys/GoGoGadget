@@ -1,40 +1,35 @@
+/*
+Copyright © 2022 Vigilant Cyber Systems, Inc. 
+Sean Heath
+<sheath@vigilantsys.com>
+Marc Bohler
+<mbohler@vigilantsys.com>
+Dylan Harbaugh
+<dharbaugh@vigilantsys.com>
+
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
 package main
 
-import (
-	"context"
-	"flag"
-	"os"
-
-	"github.com/google/subcommands"
-	"github.com/vigilantsys/gogogadget/internal/download"
-	"github.com/vigilantsys/gogogadget/internal/escalate"
-	"github.com/vigilantsys/gogogadget/internal/gadget"
-	"github.com/vigilantsys/gogogadget/internal/pivot"
-	"github.com/vigilantsys/gogogadget/internal/search"
-	"github.com/vigilantsys/gogogadget/internal/server"
-	"github.com/vigilantsys/gogogadget/internal/telnet"
-)
-
-// Add your gadget here
-var gadgets = [...]*gadget.Gadget{
-	&download.Gadget,
-	&pivot.Gadget,
-	&server.Gadget,
-	&escalate.Gadget,
-	&search.Gadget,
-	&telnet.Gadget,
-}
+import "github.com/vigilantsys/gogogadget/cmd"
 
 func main() {
-	subcommands.Register(subcommands.HelpCommand(), "")
-	//subcommands.Register(subcommands.FlagsCommand(), "")
-	//subcommands.Register(subcommands.CommandsCommand(), "")
-
-	for _, g := range gadgets {
-		subcommands.Register(g, "")
-	}
-
-	flag.Parse()
-	ctx := context.Background()
-	os.Exit(int(subcommands.Execute(ctx)))
+	cmd.Execute()
 }
