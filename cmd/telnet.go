@@ -32,7 +32,9 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/reiver/go-telnet"
 )
+
 
 // telnetCmd represents the telnet command
 var telnetCmd = &cobra.Command{
@@ -40,13 +42,22 @@ var telnetCmd = &cobra.Command{
 	Short: "telnet client",
 	Long:  `Telnet provides a telnet client program.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("telnet called")
+		var caller telnet.Caller = telnet.StandardCaller
+
+		err := telnet.DialToAndCall(fmt.Sprintf("%s:%s", telnetAddress, telnetPort), caller)
+		if err != nil {
+			fmt.Errorf("error connecting to Telnet server: %w", err)
+		}
+
 	},
 }
 
 var telnetAddress string
+var telnetPort string
 
 func init() {
 	rootCmd.AddCommand(telnetCmd)
 	telnetCmd.Flags().StringVar(&telnetAddress, "address", "", "address to connect to")
+	telnetCmd.Flags().StringVar(&telnetPort, "port", "23", "port to connect to")
 }
+
