@@ -32,6 +32,7 @@ import (
 	"bufio"
 	"fmt"
 	"io/fs"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -61,6 +62,23 @@ var searchCmd = &cobra.Command{
 		if _, err := os.Stat(searchDirectory); os.IsNotExist(err) {
 			fmt.Println(fmt.Errorf("directory %s does not exist", searchDirectory))
 		}
+		
+		// If the path is a file, just do a search on that file
+		fileInfo, err := os.Stat(searchDirectory)
+		if err != nil {
+			fmt.Println(fmt.Errorf("error analyzing path: %w", err))
+			return
+		}
+
+		if !fileInfo.IsDir() {
+			output, err := search(compiled, searchDirectory)
+			if err != nil {
+				fmt.Println(fmt.Errorf("error searching for pattern in file: %w", err))
+				return
+			}
+			fmt.Println(output)
+			return
+		}
 
 		// Create channels
 		files := make(chan string)
@@ -77,15 +95,30 @@ var searchCmd = &cobra.Command{
 			}()
 		}
 
-		// Iterate through all files (handle recursiveness)
+		// Iterate through all files
 		go func() {
 			defer close(files)
-			filepath.WalkDir(searchDirectory, func(filepath string, di fs.DirEntry, err error) error {
-				if err == nil {
-					files <- filepath
-				}
-				return nil
-			})
+			if searchRecursively {
+				filepath.WalkDir(searchDirectory, func(filepath string, di fs.DirEntry, err error) error {
+					if err == nil {
+						files <- filepath
+					}
+					return nil
+				})
+			} else {
+    				fileInfo, err := ioutil.ReadDir(searchDirectory)
+    				if err != nil {
+        				fmt.Println(err)
+					return
+    				}
+
+    				for _, file := range fileInfo {
+					if !file.IsDir() {
+						fullPath := filepath.Join(searchDirectory, file.Name())
+						files <- fullPath
+					}
+    				}
+			}
 		}()
 
 		// Wait for threads to complete
@@ -103,7 +136,7 @@ var searchCmd = &cobra.Command{
 }
 
 var searchPattern, searchDirectory string
-var searchIgnoreCase bool
+var searchIgnoreCase, searchRecursively bool
 var searchThreads int
 
 func init() {
@@ -111,6 +144,7 @@ func init() {
 	searchCmd.Flags().StringVar(&searchPattern, "pattern", "", "pattern to search for")
 	searchCmd.Flags().StringVar(&searchDirectory, "directory", ".", "directory to search")
 	searchCmd.Flags().BoolVar(&searchIgnoreCase, "ignore-case", false, "ignore case")
+	searchCmd.Flags().BoolVar(&searchRecursively, "recursive", false, "Search recursively")
 	searchCmd.Flags().IntVar(&searchThreads, "num-threads", runtime.NumCPU(), "number of threads to use")
 }
 
