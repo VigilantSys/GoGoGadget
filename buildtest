@@ -1,0 +1,21 @@
+#!/bin/bash
+RED="\e[31m"
+GREEN="32"
+BOLDGREEN="\e[1;${GREEN}m"
+BOLDRED="\e[1;31m"
+ENDCOLOR="\e[0m"
+
+for line in $(go tool dist list)
+do
+IFS=/ read -r os arch <<< $line;
+echo "Building for $os/$arch:"
+output=$(GOOS=$os GOARCH=$arch CGO_ENABLED=0 go build -o ./gogogadget_${os}_${arch} 2>&1);
+if test -f ./gogogadget_${os}_${arch}; then
+	echo -e "${BOLDGREEN}PASSED${ENDCOLOR}"	
+	rm ./gogogadget_${os}_${arch}
+else
+	echo -e "${BOLDRED}FAILED${ENDCOLOR}"
+	echo -e "${RED}${output}${ENDCOLOR}"
+fi
+printf "\n\n"
+done
