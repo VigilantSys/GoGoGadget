@@ -1,5 +1,5 @@
 /*
-Copyright © 2022 Vigilant Cyber Systems, Inc. 
+Copyright © 2022 Vigilant Cyber Systems, Inc.
 Sean Heath
 <sheath@vigilantsys.com>
 Marc Bohler
@@ -33,23 +33,21 @@ import (
 	"net"
 	"os"
 	//"sort"
-	"strings"
-	"time"
 	"errors"
 	"strconv"
+	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/spf13/cobra"
 )
-
-
 
 // rootCmd represents the base command when called without any subcommands
 var portscanCmd = &cobra.Command{
 	Use:   "portscan",
 	Short: "A simple TCP scanner",
-	Long: `A scanner for TCP ports. Similar to nmap.`,
-	Run: func(cmd *cobra.Command, args []string) { 
+	Long:  `A scanner for TCP ports. Similar to nmap.`,
+	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: Find good value for capacity
 		// Initialize variables
 		const capacity = 100
@@ -65,10 +63,9 @@ var portscanCmd = &cobra.Command{
 		}
 		timeoutDuration, err := time.ParseDuration(fmt.Sprintf("%ds", portscanTimeout))
 		if err != nil {
-			fmt.Errorf("Timeout not valid: %w", err)	
+			fmt.Errorf("Timeout not valid: %w", err)
 			return
 		}
-
 
 		// Perform ping scan
 		if !portscanNoPing {
@@ -100,6 +97,7 @@ var portscanCmd = &cobra.Command{
 var portscanAddress, portscanPorts string
 var portscanTimeout int
 var portscanNoPing bool
+
 func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
@@ -153,8 +151,8 @@ func portScan(ipsList []string, portsList []string, capacity int, timeout time.D
 		}
 	}()
 
-	for i := 0; i < len(portsList) * len(ipsList); i++ {
-		result := <- results
+	for i := 0; i < len(portsList)*len(ipsList); i++ {
+		result := <-results
 		if result != "" {
 			fields := strings.Split(result, " ")
 			portStatus := fields[1]
@@ -163,7 +161,7 @@ func portScan(ipsList []string, portsList []string, capacity int, timeout time.D
 			if resultMap[fields[0]] == nil {
 				resultMap[fields[0]] = make(map[string]string)
 			}
-			resultMap[fields[0]][fields[1]] =  portStatus
+			resultMap[fields[0]][fields[1]] = portStatus
 		}
 	}
 
@@ -256,7 +254,7 @@ func printResults(results map[string]map[string]string) {
 
 	for ip, portMap := range results {
 		fmt.Printf("Results for host %s:\n", ip)
-		var portStrings []string		
+		var portStrings []string
 		for port, status := range portMap {
 			if status != "closed" {
 				portStrings = append(portStrings, fmt.Sprintf("%s\t%s\t", port, status))
