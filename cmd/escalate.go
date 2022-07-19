@@ -1,3 +1,4 @@
+//go:build linux
 /*
 Copyright © 2022 Vigilant Cyber Systems, Inc.
 Sean Heath
