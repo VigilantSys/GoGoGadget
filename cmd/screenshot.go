@@ -1,5 +1,5 @@
 /*
-Copyright © 2022 Vigilant Cyber Systems, Inc. 
+Copyright © 2022 Vigilant Cyber Systems, Inc.
 Sean Heath
 <sheath@vigilantsys.com>
 Marc Bohler
@@ -30,31 +30,34 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"time"
 	"image/png"
+	"os"
 	"strings"
+	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/kbinani/screenshot"
-
+	"github.com/spf13/cobra"
 )
 
 var outputDir = ""
+
 // screenshotCmd represents the screenshot command
 var screenshotCmd = &cobra.Command{
 	Use:   "screenshot",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "takes screenshots of any active monitors",
+	Long: `Screenshot takes a screenshot of any active monitors and saves it
+	to the specified directory. If no directory is specified, the image is saved
+	to the current directory.
+	
+	# gogogadget screenshot -o /tmp`,
 	Run: func(cmd *cobra.Command, args []string) {
+		separator := '/'
+		if runtime.GOOS == "windows" {
+			separator = '\'
+		}
 		n := screenshot.NumActiveDisplays()
 
-		for i :=0; i < n; i++ {
+		for i := 0; i < n; i++ {
 			bounds := screenshot.GetDisplayBounds(i)
 			img, err := screenshot.CaptureRect(bounds)
 			if err != nil {
@@ -64,14 +67,14 @@ to quickly create a Cobra application.`,
 			ts := time.Now().Format("20060102-15:04:05")
 			if outputDir != "" {
 				// Check for trailing slash
-				if !strings.HasSuffix(outputDir, "/") {
+				if !strings.HasSuffix(outputDir, separator) {
 					// no slash found, add one
-					outputDir = outputDir + "/"
+					outputDir = outputDir + separator
 				}
-				// prepend directory to timestamp
-				ts = outputDir + ts 
 			}
-			fname := fmt.Sprintf("%s-%d-%dx%d.png", ts, i, bounds.Dx(), bounds.Dy())
+			// prepend the filename with the outputdir
+			fname := outputDir
+			fname += fmt.Sprintf("%s-%d-%dx%d.png", ts, i, bounds.Dx(), bounds.Dy())
 			file, err := os.Create(fname)
 			if err != nil {
 				fmt.Println("could not save files to the specified location: " + fname)
