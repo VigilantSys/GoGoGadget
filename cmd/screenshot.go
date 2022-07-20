@@ -1,3 +1,5 @@
+//go:build windows || android || (linux && (arm || amd64 || arm64 || 386))
+
 /*
 Copyright © 2022 Vigilant Cyber Systems, Inc. 
 Sean Heath
