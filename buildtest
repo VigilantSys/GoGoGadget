@@ -20,7 +20,7 @@ do
 	TEXTLEN=${#TEXT}
 	DOTLEN=$(expr 84 - $TEXTLEN)
 	echo -n -e "${TEXT}"
-	for (( c=1; c<=${DOTLEN}; c++ )); do printf '.'; done
+	for (( c=1; c<=${DOTLEN}; c++ )); do echo -n '.'; done
 
 	# Build ggg
 	output=$(GOOS=$os GOARCH=$arch CGO_ENABLED=0 go build -o ./gogogadget_${os}_${arch} 2>&1);
@@ -35,7 +35,7 @@ do
 		echo -e "${RED}${output}${ENDCOLOR}"
 		NUMFAILED=$(expr ${NUMFAILED} + 1)
 	fi
-	printf "\n\n"
+	echo -e "\n"
 done
 
 # Summary
