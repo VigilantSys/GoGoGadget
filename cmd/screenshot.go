@@ -36,6 +36,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"runtime"
 
 	"github.com/kbinani/screenshot"
 	"github.com/spf13/cobra"
@@ -53,9 +54,9 @@ var screenshotCmd = &cobra.Command{
 	
 	# gogogadget screenshot -o /tmp`,
 	Run: func(cmd *cobra.Command, args []string) {
-		separator := '/'
+		separator := "/"
 		if runtime.GOOS == "windows" {
-			separator = '\'
+			separator = "\\"
 		}
 		n := screenshot.NumActiveDisplays()
 
