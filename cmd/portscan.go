@@ -53,17 +53,17 @@ var portscanCmd = &cobra.Command{
 		const capacity = 100
 		portsList, err := parsePorts(portscanPorts)
 		if err != nil {
-			fmt.Errorf("Invalid port string: %w", err)
+			fmt.Println(fmt.Errorf("Invalid port string: %w", err))
 			return
 		}
 		ipsList, err := parseIPs(portscanAddress)
 		if err != nil {
-			fmt.Errorf("Invalid IP range: %w", err)
+			fmt.Println(fmt.Errorf("Invalid IP range: %w", err))
 			return
 		}
 		timeoutDuration, err := time.ParseDuration(fmt.Sprintf("%ds", portscanTimeout))
 		if err != nil {
-			fmt.Errorf("Timeout not valid: %w", err)
+			fmt.Println(fmt.Errorf("Timeout not valid: %w", err))
 			return
 		}
 
@@ -72,7 +72,7 @@ var portscanCmd = &cobra.Command{
 			fmt.Printf("Performing ping scan on %d IP addresses\n\n", len(ipsList))
 			ipsList, err = pingScan(ipsList, capacity, timeoutDuration)
 			if err != nil {
-				fmt.Errorf("Error performing ping scan: %w", err)
+				fmt.Println(fmt.Errorf("Error performing ping scan: %w", err))
 				return
 			}
 			fmt.Printf("Found %d hosts up\n\n", len(ipsList))
@@ -83,7 +83,7 @@ var portscanCmd = &cobra.Command{
 		fmt.Printf("Performing portscan for %d ports on %d IP addresses:\n\n", len(portsList), len(ipsList))
 		resultMap, err := portScan(ipsList, portsList, capacity, timeoutDuration)
 		if err != nil {
-			fmt.Errorf("Error performing port scan: %w", err)
+			fmt.Println(fmt.Errorf("Error performing port scan: %w", err))
 			return
 		}
 		fmt.Println("\nPort scan complete!\n")
@@ -225,6 +225,9 @@ func parsePorts(portsString string) ([]string, error) {
 func parseIPs(ipsString string) ([]string, error) {
 	/* Credit : https://gist.github.com/kotakanbe/d3059af990252ba89a82 */
 
+	if !strings.Contains(ipsString, "/") {
+		ipsString += "/32"
+	}
 	ip, ipnet, err := net.ParseCIDR(ipsString)
 	if err != nil {
 		return nil, err
@@ -236,7 +239,7 @@ func parseIPs(ipsString string) ([]string, error) {
 	}
 
 	// remove network address and broadcast address
-	return ips[1 : len(ips)-1], nil
+	return ips, nil
 }
 
 func inc(ip net.IP) {
