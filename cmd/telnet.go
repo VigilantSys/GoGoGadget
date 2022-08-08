@@ -31,10 +31,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/reiver/go-telnet"
+	"github.com/spf13/cobra"
 )
-
 
 // telnetCmd represents the telnet command
 var telnetCmd = &cobra.Command{
@@ -60,4 +59,3 @@ func init() {
 	telnetCmd.Flags().StringVar(&telnetAddress, "address", "", "address to connect to")
 	telnetCmd.Flags().StringVar(&telnetPort, "port", "23", "port to connect to")
 }
-

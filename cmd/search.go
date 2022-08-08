@@ -62,7 +62,7 @@ var searchCmd = &cobra.Command{
 		if _, err := os.Stat(searchDirectory); os.IsNotExist(err) {
 			fmt.Println(fmt.Errorf("directory %s does not exist", searchDirectory))
 		}
-		
+
 		// If the path is a file, just do a search on that file
 		fileInfo, err := os.Stat(searchDirectory)
 		if err != nil {
@@ -106,18 +106,18 @@ var searchCmd = &cobra.Command{
 					return nil
 				})
 			} else {
-    				fileInfo, err := ioutil.ReadDir(searchDirectory)
-    				if err != nil {
-        				fmt.Println(err)
+				fileInfo, err := ioutil.ReadDir(searchDirectory)
+				if err != nil {
+					fmt.Println(err)
 					return
-    				}
+				}
 
-    				for _, file := range fileInfo {
+				for _, file := range fileInfo {
 					if !file.IsDir() {
 						fullPath := filepath.Join(searchDirectory, file.Name())
 						files <- fullPath
 					}
-    				}
+				}
 			}
 		}()
 
