@@ -1,7 +1,11 @@
 # Go Go Gadget
 
+![](resources/logowords.png)
+
+
 GoGoGadget provides a set of tools useful for cyber security testing packaged in a statically compiled binary. Have you ever been on an engagement and compromised a system only to find the system provides none of the tools you need? Even worse the system is running on ARM or PPC and you have no time to set up a cross-compiler to get something working... GoGoGadget is here to solve all your problems. Want to move files off the machine? `gogogoadget server` will start a web server. Need to pull something from your attack box? `gogogadget download` is what you want. Did you find a juicy target on the inside of the network? Check out `gogogadget pivot`. To add gadgets of your own check out `CONTRIBUTING.md`.
 
+![](resources/gopher.png)
 # Current Gadgets
 - download - a wget style download utility
 - escalate - user escalation on Linux using dirtypipe
