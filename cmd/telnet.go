@@ -45,7 +45,7 @@ var telnetCmd = &cobra.Command{
 
 		err := telnet.DialToAndCall(fmt.Sprintf("%s:%s", telnetAddress, telnetPort), caller)
 		if err != nil {
-			fmt.Errorf("error connecting to Telnet server: %w", err)
+			fmt.Println(fmt.Errorf("error connecting to Telnet server: %w", err))
 		}
 
 	},
