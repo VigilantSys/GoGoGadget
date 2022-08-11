@@ -34,9 +34,9 @@ import (
 	"fmt"
 	"image/png"
 	"os"
+	"runtime"
 	"strings"
 	"time"
-	"runtime"
 
 	"github.com/kbinani/screenshot"
 	"github.com/spf13/cobra"
@@ -49,8 +49,8 @@ var screenshotCmd = &cobra.Command{
 	Use:   "screenshot",
 	Short: "takes screenshots of any active monitors",
 	Long: `Screenshot takes a screenshot of any active monitors and saves it
-	to the specified directory. If no directory is specified, the image is saved
-	to the current directory.
+to the specified directory. If no directory is specified, the image is saved
+to the current directory.
 	
 	# gogogadget screenshot -o /tmp`,
 	Run: func(cmd *cobra.Command, args []string) {

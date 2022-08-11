@@ -79,7 +79,7 @@ var serverTemplate = `<!DOCTYPE html>
 func init() {
 	rootCmd.AddCommand(serverCmd)
 	serverCmd.Flags().StringVar(&serverDirectory, "dir", ".", "the directory to serve files from")
-	serverCmd.Flags().StringVar(&pivotPort, "port", "8080", "the port to listen on")
+	serverCmd.Flags().StringVar(&serverPort, "port", "8080", "the port to listen on")
 
 }
 
