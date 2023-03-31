@@ -1,6 +1,5 @@
 # Based on https://betterprogramming.pub/my-ultimate-makefile-for-golang-projects-fcc8ca20c9bb
 GOCMD=go
-GOTEST=$(GOCMD) test
 GOVET=$(GOCMD) vet
 BINARY_NAME=gogogadget
 VERSION?=0.0.1
@@ -13,12 +12,29 @@ RESET  := $(shell tput -Txterm sgr0)
 
 .PHONY: all test build vendor
 
-all: help
+all:
+	mkdir -p out/bin
+	for arch in $$(go tool dist list); do \
+		export GOOS=$$(echo $$arch | cut -d '/' -f 1); \
+		export GOARCH=$$(echo $$arch | cut -d '/' -f 2); \
+		export FNAME=gogogadget_$$GOOS$$GOARCH; \
+		echo "Making $$GOOS:$$GOARCH"; \
+		echo "Making $$FNAME"; \
+		GOOS=$$GOOS \
+		GOARCH=$$GOARCH \
+		GO111MODULE=on \
+		CGO_ENABLED=0 \
+		$(GOCMD) build \
+		-a -tags netgo \
+		-ldflags '-s -w -extldflags "-static"' \
+		-mod vendor \
+		-o out/bin/$$FNAME; \
+	done
 
 ## Build:
 build: ## Build your project and put the output binary in out/bin/
 	mkdir -p out/bin
-	GO111MODULE=on $(GOCMD) build -mod vendor -o out/bin/$(BINARY_NAME) .
+	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -mod vendor -o out/bin/$(BINARY_NAME) .
 
 clean: ## Remove build related file
 	rm -fr ./bin
